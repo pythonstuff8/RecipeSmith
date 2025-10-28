@@ -1102,13 +1102,10 @@ private struct IngredientRow: View {
             Spacer()
             
             let tags = Array(Set(gptTags.map { $0.lowercased() })).sorted()
-            let scale: CGFloat = tags.count == 0 ? 1.0 : max(0.65, 1.0 - CGFloat(tags.count - 1) * 0.1)
-            let spacing: CGFloat = tags.count == 0 ? 6 : max(2, 8 - CGFloat(tags.count))
-            HStack(spacing: spacing) {
+            VStack(alignment: .trailing, spacing: 4) {
                 ForEach(tags, id: \.self) { tag in
                     let style = tagStyle(for: tag)
                     TagChip(icon: style.icon, label: style.label, color: style.color, showBackground: style.showBackground)
-                        .scaleEffect(scale)
                 }
             }
         }
@@ -1170,7 +1167,7 @@ private struct IngredientRow: View {
         case "vitamin", "vitamin c", "vitamin a", "vitamin d":
             return ("star.fill", "Vitamin", .orange, true)
         default:
-            return ("tag.fill", rawTag.capitalized, .gray, true)
+            return ("tag.fill", rawTag.capitalized, .gray, false)
         }
     }
 }
