@@ -31,7 +31,7 @@ struct Recipe: Identifiable, Hashable, Codable {
         case description = "description"
         case imageDescription = "imgdesc"
         case servings = "servings"
-        case servingSize = "serving_size"
+        case servingSize = "servingSize"
         case prepTime = "prep"
         case cookTime = "cook"
         case totalTime = "total"
@@ -42,7 +42,7 @@ struct Recipe: Identifiable, Hashable, Codable {
         case mealType = "meal"
         case equipmentUsed = "equipment"
         case dietLabels = "diet"
-        case ingredientTypes = "ingredient_types"
+        case ingredientTypes = "ingredientTypes"
         case imageName = "imgname"
         case imageUrl = "imgurl"
     }
@@ -234,6 +234,7 @@ struct RecipeDisplayView: View {
         Prep Time: \(recipe.prepTime)
         Cook Time: \(recipe.cookTime)
         Total Time: \(recipe.totalTime)
+        
         
         Nutritional Information:
         Calories: \(recipe.calorieCount) per serving
@@ -569,6 +570,7 @@ struct RecipeDetailsView: View {
                 InfoRow(title: "Total Time", value: recipe.totalTime)
                 InfoRow(title: "Cuisine", value: recipe.cuisine)
                 InfoRow(title: "Servings", value: recipe.servings)
+                InfoRow(title: "Serving Size", value: recipe.servingSize ?? "N/A")
                 InfoRow(title: "Course", value: recipe.mealType)
             }
         }

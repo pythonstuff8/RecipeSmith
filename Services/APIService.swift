@@ -176,7 +176,7 @@ class APIService {
           "description": "string",
           "imgdesc": "string",
           "servings": "string",
-          "serving_size": "string (e.g. \\"100g per serving\\")",
+          "servingSize": "string (e.g. \\"100g per serving\\")",
           "prep": "string with minutes",
           "cook": "string with minutes",
           "total": "string with minutes",
@@ -194,7 +194,7 @@ class APIService {
             "vitamins": [{"name": "string", "amount": "number", "unit": "string"}],
             "minerals": [{"name": "string", "amount": "number", "unit": "string"}]
           },
-          "ingredient_types": { "ingredient string": ["tag1","tag2", "..."] },
+          "ingredientTypes": { "ingredient string": ["tag1","tag2", "..."] },
           "ingredients": ["string"],
           "instructions": ["string"],
           "meal": "string",
@@ -243,7 +243,7 @@ class APIService {
         
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
-        print("Using data: \(jsonData)")
+        print("Using data: \(cleanedContent)")
 
         do {
             let recipe = try decoder.decode(Recipe.self, from: jsonData)

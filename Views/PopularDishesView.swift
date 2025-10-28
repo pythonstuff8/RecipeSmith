@@ -147,7 +147,7 @@ class PopularDishesViewModel: ObservableObject {
         "Biryani", "Ramen", "Dumplings", "BBQ Ribs",
         "Fish and Chips", "Holiday Feast", "Festive Meal",
         "Traditional Feast", "Special Occasion", "Celebration Dish",
-        "Custom Recipe (specify in Notes)"
+        "Custom Recipe"
     ]
     
     init() {

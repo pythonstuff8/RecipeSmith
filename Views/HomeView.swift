@@ -122,9 +122,7 @@ struct HomeView: View {
                                     Text(detail.name)
                                         .lineLimit(1)
                                     
-                                    Text("\(Int(detail.calories)) cal")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                 
                                     
                                     Button(action: {
                                         var updated = ingredient

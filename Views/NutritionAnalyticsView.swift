@@ -757,7 +757,6 @@ private struct HealthInsightCard: View {
 
 private struct MicronutrientsView: View {
     let nutrition: NutritionData
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {

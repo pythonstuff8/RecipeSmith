@@ -61,12 +61,7 @@ struct IngredientSearchView: View {
                                     Text(ingredient.name)
                                         .foregroundColor(.primary)
                                     
-                                    HStack(spacing: 8) {
-                                        Label("\(Int(ingredient.calories))", systemImage: "flame.fill")
-                                        Label("\(Int(ingredient.protein))g", systemImage: "p.circle.fill")
-                                        Label("\(Int(ingredient.carbs))g", systemImage: "c.circle.fill")
-                                        Label("\(Int(ingredient.fat))g", systemImage: "f.circle.fill")
-                                    }
+                                    
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                                 }
@@ -166,8 +161,7 @@ struct CustomIngredientSheet: View {
                         if includeNutrition {
                             let detail = IngredientDetail(
                                 id: Int(Date().timeIntervalSince1970),
-                                name: name,
-                                calories: calories,
+                                name: name, calories: calories,
                                 protein: protein,
                                 carbs: carbs,
                                 fat: fat,
