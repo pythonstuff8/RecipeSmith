@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 class RecipeService {
     static let shared = RecipeService()
@@ -29,11 +30,21 @@ class RecipeService {
            - Protein (in grams)
            - Carbohydrates (in grams)
            - Fat (in grams)
-        
+           - Fiber (in grams)
+           - Sugar (in grams)
+           - Sodium (in mg)
+           - Cholesterol (in mg)
+           - Saturated Fat (in grams)
+           - Trans Fat (in grams)
         2. Always include specific dietary labels based on ingredients and nutrition
         
         3. Provide detailed cooking instructions and timing
-        
+        4. Include vitamins and minerals arrays with realistic estimates.
+        5. Provide ingredient list with amounts and clear instructions.
+        6. Also RETURN AN ADDITIONAL FIELD named "serving_size" describing the typical weight/volume per serving (e.g. "100g per serving").
+        7. Also RETURN an "ingredient_types" object that maps each ingredient (string) to a list of nutritional tags/categories (e.g. "protein", "fiber", "vitamin_c", "cholesterol", "sodium"). Use concise labels.
+
+        Return ONLY valid JSON (no surrounding markdown) with keys matching the required output, e.g. "ingredient_types": { "shrimp": ["protein","cholesterol"], ... }
         """
         
         if !allowOtherIngredients {
@@ -111,7 +122,15 @@ class RecipeService {
           "macros": {
             "protein": "exact grams per serving",
             "carbohydrates": "exact grams per serving",
-            "fat": "exact grams per serving"
+            "fat": "exact grams per serving",
+            "fiber": "exact grams per serving (ALWAYS provide this)",
+            "sugar": "exact grams per serving (ALWAYS provide this)",
+            "sodium": "exact mg per serving (ALWAYS provide this)",
+            "cholesterol": "exact mg per serving (ALWAYS provide this)",
+            "saturated_fat": "exact grams per serving (ALWAYS provide this)",
+            "trans_fat": "exact grams per serving (ALWAYS provide this)",
+            "vitamins": [{"name": "Vitamin Name", "amount": "number", "unit": "unit"}],
+            "minerals": [{"name": "Mineral Name", "amount": "number", "unit": "unit"}]
           },
           "ingredients": ["detailed ingredients with amounts"],
           "instructions": ["numbered, detailed steps"],
@@ -119,6 +138,8 @@ class RecipeService {
           "equipment": ["specific equipment list"],
           "diet": ["all applicable dietary labels"]
         }
+        
+        IMPORTANT: The vitamins array should include common vitamins found in the ingredients such as Vitamin A, C, D, E, K, and B vitamins. The minerals array should include Iron, Calcium, Potassium, Magnesium, Zinc, etc. Always provide realistic values based on the ingredients used.
         """
         
         return prompt

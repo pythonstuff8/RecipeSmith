@@ -23,6 +23,9 @@ struct RootView: View {
             case .home, .savedRecipes:
                 MainTabView()
                     .transition(.opacity)
+            case .nutritionAnalytics(let recipe):
+                NutritionAnalyticsView(initialRecipe: recipe)
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
             case .extraDetails(let source):
                 ExtraDetailsView(source: source)
                     .transition(.opacity.combined(with: .move(edge: .trailing)))

@@ -3,21 +3,23 @@ import Foundation
 
 struct Recipe: Identifiable, Hashable, Codable {
     var id = UUID()
-    let cuisine: String
-    let title: String
-    let description: String
-    let imageDescription: String?
-    let servings: String
-    let prepTime: String
-    let cookTime: String
-    let totalTime: String
-    let calorieCount: String
-    let macros: RecipeMacros
-    let ingredients: [String]
-    let instructions: [String]
+    var cuisine: String
+    var title: String
+    var description: String
+    var imageDescription: String?
+    var servings: String
+    var servingSize: String?
+    var prepTime: String
+    var cookTime: String
+    var totalTime: String
+    var calorieCount: String
+    var macros: RecipeMacros
+    var ingredients: [String]
+    var instructions: [String]
     var mealType: String
-    let equipmentUsed: [String]
-    let dietLabels: [String]
+    var equipmentUsed: [String]
+    var dietLabels: [String]
+    var ingredientTypes: [String: [String]]?
     var imageName: String?
     var imageUrl: String?
     var isFromSaved: Bool = false
@@ -29,6 +31,7 @@ struct Recipe: Identifiable, Hashable, Codable {
         case description = "description"
         case imageDescription = "imgdesc"
         case servings = "servings"
+        case servingSize = "serving_size"
         case prepTime = "prep"
         case cookTime = "cook"
         case totalTime = "total"
@@ -39,13 +42,13 @@ struct Recipe: Identifiable, Hashable, Codable {
         case mealType = "meal"
         case equipmentUsed = "equipment"
         case dietLabels = "diet"
+        case ingredientTypes = "ingredient_types"
         case imageName = "imgname"
         case imageUrl = "imgurl"
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-
         id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
         cuisine = try container.decode(String.self, forKey: .cuisine)
         title = try container.decode(String.self, forKey: .title)
@@ -55,12 +58,14 @@ struct Recipe: Identifiable, Hashable, Codable {
         totalTime = try container.decode(String.self, forKey: .totalTime)
         imageDescription = try container.decodeIfPresent(String.self, forKey: .imageDescription)
         servings = try container.decode(String.self, forKey: .servings)
+        servingSize = try container.decodeIfPresent(String.self, forKey: .servingSize)
         calorieCount = try container.decode(String.self, forKey: .calorieCount)
         ingredients = try container.decode([String].self, forKey: .ingredients)
         instructions = try container.decode([String].self, forKey: .instructions)
         mealType = try container.decode(String.self, forKey: .mealType)
         equipmentUsed = try container.decode([String].self, forKey: .equipmentUsed)
         dietLabels = try container.decode([String].self, forKey: .dietLabels)
+        ingredientTypes = try? container.decodeIfPresent([String: [String]].self, forKey: .ingredientTypes)
         imageName = try container.decodeIfPresent(String.self, forKey: .imageName)
         imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl)
         macros = try container.decode(RecipeMacros.self, forKey: .macros)
@@ -73,6 +78,7 @@ struct Recipe: Identifiable, Hashable, Codable {
         try container.encode(cuisine, forKey: .cuisine)
         try container.encode(title, forKey: .title)
         try container.encode(description, forKey: .description)
+        try container.encodeIfPresent(servingSize, forKey: .servingSize)
         try container.encodeIfPresent(imageDescription, forKey: .imageDescription)
         try container.encode(servings, forKey: .servings)
         try container.encode(prepTime, forKey: .prepTime)
@@ -85,6 +91,7 @@ struct Recipe: Identifiable, Hashable, Codable {
         try container.encode(mealType, forKey: .mealType)
         try container.encode(equipmentUsed, forKey: .equipmentUsed)
         try container.encode(dietLabels, forKey: .dietLabels)
+        try container.encodeIfPresent(ingredientTypes, forKey: .ingredientTypes)
         try container.encodeIfPresent(imageName, forKey: .imageName)
         try container.encodeIfPresent(imageUrl, forKey: .imageUrl)
     }
@@ -94,11 +101,27 @@ struct RecipeMacros: Hashable, Codable {
     let protein: String
     let carbohydrates: String
     let fat: String
+    let fiber: String?
+    let sugar: String?
+    let sodium: String?
+    let cholesterol: String?
+    let saturatedFat: String?
+    let transFat: String?
+    let vitamins: [VitaminInfo]?
+    let minerals: [MineralInfo]?
     
     enum CodingKeys: String, CodingKey {
         case protein
         case carbohydrates
         case fat
+        case fiber
+        case sugar
+        case sodium
+        case cholesterol
+        case saturatedFat = "saturated_fat"
+        case transFat = "trans_fat"
+        case vitamins
+        case minerals
     }
     
     init(from decoder: Decoder) throws {
@@ -127,13 +150,57 @@ struct RecipeMacros: Hashable, Codable {
         } else {
             fat = "0g"
         }
+        
+        fiber = try? container.decode(String.self, forKey: .fiber)
+        sugar = try? container.decode(String.self, forKey: .sugar)
+        sodium = try? container.decode(String.self, forKey: .sodium)
+        cholesterol = try? container.decode(String.self, forKey: .cholesterol)
+        saturatedFat = try? container.decode(String.self, forKey: .saturatedFat)
+        transFat = try? container.decode(String.self, forKey: .transFat)
+        vitamins = try? container.decode([VitaminInfo].self, forKey: .vitamins)
+        minerals = try? container.decode([MineralInfo].self, forKey: .minerals)
     }
     
     init(protein: String, carbohydrates: String, fat: String) {
         self.protein = protein
         self.carbohydrates = carbohydrates
         self.fat = fat
+        self.fiber = nil
+        self.sugar = nil
+        self.sodium = nil
+        self.cholesterol = nil
+        self.saturatedFat = nil
+        self.transFat = nil
+        self.vitamins = nil
+        self.minerals = nil
     }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(protein, forKey: .protein)
+        try container.encode(carbohydrates, forKey: .carbohydrates)
+        try container.encode(fat, forKey: .fat)
+        try container.encodeIfPresent(fiber, forKey: .fiber)
+        try container.encodeIfPresent(sugar, forKey: .sugar)
+        try container.encodeIfPresent(sodium, forKey: .sodium)
+        try container.encodeIfPresent(cholesterol, forKey: .cholesterol)
+        try container.encodeIfPresent(saturatedFat, forKey: .saturatedFat)
+        try container.encodeIfPresent(transFat, forKey: .transFat)
+        try container.encodeIfPresent(vitamins, forKey: .vitamins)
+        try container.encodeIfPresent(minerals, forKey: .minerals)
+    }
+}
+
+struct VitaminInfo: Hashable, Codable {
+    let name: String
+    let amount: String
+    let unit: String
+}
+
+struct MineralInfo: Hashable, Codable {
+    let name: String
+    let amount: String
+    let unit: String
 }
 
 struct RecipeDisplayView: View {
@@ -192,18 +259,7 @@ struct RecipeDisplayView: View {
         ScrollView(.vertical, showsIndicators: true) {
             VStack(spacing: 20) {
                 RecipeHeaderView(
-                    recipe: recipe,
-                    onBack: {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            if isFromSavedRecipes {
-                                navigationManager.navigate(to: .savedRecipes)
-                            } else {
-                                showingBackAlert = true
-                            }
-                        }
-                    },
-                    showingBackAlert: $showingBackAlert,
-                    isFromSavedRecipes: isFromSavedRecipes
+                    recipe: recipe
                 )
  
                 RecipeContentView(
@@ -303,7 +359,7 @@ struct RecipeDisplayView: View {
                 }
             }
             .padding(.horizontal)
-            .padding(.top, topInset + 8)
+            .padding(.top, topInset - 4)
             .zIndex(10)
             .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 2)
         }
@@ -377,41 +433,43 @@ struct RecipeDisplayView: View {
                 showingBackAlert = true
             }
         })
-        .alert("Go Back", isPresented: $showingBackAlert) {
-            Button("No", role: .cancel) {}
-            Button("Yes", role: .destructive) {
-                if let imageName = recipe.imageName {
-                    Task {
-                        try? await APIService.shared.deleteFromS3(fileName: imageName)
-                    }
-                }
-                navigationManager.navigateToRoot()
-            }
-        } message: {
-            Text("Are you sure you want to go back? Your recipe will be lost.")
-        }
+        .alert("Go Back", isPresented: Binding(get: { showingBackAlert && !recipe.isFromSaved }, set: { showingBackAlert = $0 })) {
+             Button("No", role: .cancel) {}
+             Button("Yes", role: .destructive) {
+                 if let imageName = recipe.imageName {
+                     Task {
+                         try? await APIService.shared.deleteFromS3(fileName: imageName)
+                     }
+                 }
+                 navigationManager.navigateToRoot()
+             }
+         } message: {
+             Text("Are you sure you want to go back? Your recipe will be lost.")
+         }
         .onAppear {
-            if recipe.imageUrl == nil {
-                Task {
-                    if let imageDescription = recipe.imageDescription {
-                        do {
-                            let imageData = try await APIService.shared.generateImage(prompt: imageDescription)
-                            if let imageBytes = Data(base64Encoded: imageData) {
-                                let fileName = "\(recipe.title.replacingOccurrences(of: " ", with: "_"))_\(UUID().uuidString.prefix(8)).png"
-                                let imageUrl = try await APIService.shared.uploadToS3(imageData: imageBytes, fileName: fileName)
-                                var updatedRecipe = recipe
-                                updatedRecipe.imageName = fileName
-                                updatedRecipe.imageUrl = imageUrl
-                                NavigationManager.shared.updateRecipe(updatedRecipe)
-                            }
-                        } catch {
-                            print("Failed to generate/upload image: \(error)")
-                        }
-                    }
-                }
-            }
             savedRecipesVM.loadSavedRecipes()
             isSaved = savedRecipesVM.savedRecipes.contains { $0.id == recipe.id }
+            isFromSavedRecipes = recipe.isFromSaved
+
+            if recipe.imageUrl == nil, let imageDescription = recipe.imageDescription {
+                Task {
+                    do {
+                        let imageData = try await APIService.shared.generateImage(prompt: imageDescription)
+                        if let imageBytes = Data(base64Encoded: imageData) {
+                            let fileName = "\(recipe.title.replacingOccurrences(of: " ", with: "_"))_\(UUID().uuidString.prefix(8)).png"
+                            let imageUrl = try await APIService.shared.uploadToS3(imageData: imageBytes, fileName: fileName)
+                            var updatedRecipe = recipe
+                            updatedRecipe.imageName = fileName
+                            updatedRecipe.imageUrl = imageUrl
+                            await MainActor.run {
+                                NavigationManager.shared.updateRecipe(updatedRecipe)
+                            }
+                        }
+                    } catch {
+                        print("Failed to generate/upload image: \(error)")
+                    }
+                }
+            }
         }
         .alert("Delete Recipe", isPresented: $showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
@@ -438,9 +496,6 @@ struct RecipeDisplayView: View {
 
 struct RecipeHeaderView: View {
     let recipe: Recipe
-    let onBack: () -> Void
-    @Binding var showingBackAlert: Bool
-    let isFromSavedRecipes: Bool
     
     var body: some View {
         let topInset = (UIApplication.shared.connectedScenes
@@ -693,7 +748,7 @@ struct RecipeActionsView: View {
     let onEdit: () -> Void
     let onDelete: () -> Void
     let onSave: () -> Void
-    
+     
     var body: some View {
         HStack(spacing: 16) {
             Button(action: onCopy) {
@@ -737,7 +792,7 @@ struct RecipeActionsView: View {
         }
         .padding()
     }
-}
+ }
 
 struct RecipeContentView: View {
     let recipe: Recipe
@@ -816,18 +871,26 @@ struct IngredientsView: View {
     let ingredients: [String]
     
     var body: some View {
-        GroupBox(label: Text("Ingredients").fontWeight(.semibold)) {
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(ingredients, id: \.self) { ingredient in
-                    HStack(alignment: .top) {
-                        Text("•")
-                        Text(ingredient)
-                            .fixedSize(horizontal: false, vertical: true)
+        if ingredients.isEmpty {
+            EmptyView()
+        } else {
+            GroupBox(label: Text("Ingredients").fontWeight(.semibold)) {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(ingredients, id: \.self) { ingredient in
+                        HStack(alignment: .top, spacing: 8) {
+                            Text("•")
+                                .font(.body)
+                                .foregroundColor(.primary)
+                            Text(ingredient)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .foregroundColor(.primary)
+                        }
                     }
                 }
+                .padding(.vertical, 4)
             }
+            .padding(.horizontal)
         }
-        .padding(.horizontal)
     }
 }
 
@@ -835,23 +898,33 @@ struct InstructionsView: View {
     let instructions: [String]
     
     var body: some View {
-        GroupBox(label: Text("Instructions").fontWeight(.semibold)) {
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(Array(instructions.enumerated()), id: \.offset) { index, instruction in
-                    HStack(alignment: .top, spacing: 12) {
-                        Text("\(index + 1)")
-                            .font(.system(.body, design: .rounded))
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                            .frame(width: 24, height: 24)
-                            .background(Circle().fill(Color.blue))
-                        
-                        Text(instruction.replacingOccurrences(of: "^\\d+\\.\\s*", with: "", options: .regularExpression))
-                            .fixedSize(horizontal: false, vertical: true)
+        if instructions.isEmpty {
+            EmptyView()
+        } else {
+            GroupBox(label: Text("Instructions").fontWeight(.semibold)) {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(Array(instructions.enumerated()), id: \.offset) { index, instruction in
+                        HStack(alignment: .top, spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.blue)
+                                    .frame(width: 32, height: 32)
+                                Text("\(index + 1)")
+                                    .foregroundColor(.white)
+                                    .font(.subheadline)
+                                    .bold()
+                            }
+                            
+                            Text(instruction.replacingOccurrences(of: "^\\d+\\.\\s*", with: "", options: .regularExpression))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .font(.body)
+                                .foregroundColor(.primary)
+                        }
                     }
                 }
+                .padding(.vertical, 4)
             }
+            .padding(.horizontal)
         }
-        .padding(.horizontal)
     }
 }

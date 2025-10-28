@@ -17,10 +17,15 @@ struct IngredientSearchView: View {
                     TextField("Search ingredients...", text: $viewModel.searchQuery)
                         .textFieldStyle(.plain)
                         .autocapitalization(.none)
-                        .submitLabel(.search)  
-                        .onSubmit {
-                            viewModel.searchNow()
-                        }
+                        .submitLabel(.search)
+                        .onSubmit { viewModel.searchNow() }
+                    
+                    Button(action: { viewModel.searchNow() }) {
+                        Image(systemName: "arrow.forward.circle.fill")
+                            .foregroundColor(.blue)
+                            .imageScale(.large)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding()
                 .background(Color(.systemGray6))
@@ -204,10 +209,19 @@ class IngredientSearchViewModel: ObservableObject {
     
     init() {
         $searchQuery
-            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main) 
-            .filter { !$0.isEmpty } 
+            .debounce(for: .milliseconds(300), scheduler: DispatchQueue.main)
             .sink { [weak self] query in
-                self?.performSearch(query: query)
+                guard let self = self else { return }
+                if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Task { @MainActor in
+                        self.searchResults = []
+                        self.isLoading = false
+                    }
+                    return
+                }
+                Task {
+                    await self.performSearch(query: query)
+                }
             }
             .store(in: &cancellables)
     }
@@ -215,35 +229,33 @@ class IngredientSearchViewModel: ObservableObject {
     func searchNow() {
         searchTask?.cancel()
         searchTask = Task {
-            await MainActor.run { isLoading = true }
             await performSearch(query: searchQuery)
         }
     }
     
-    private func performSearch(query: String) {
-        guard !query.isEmpty else {
-            searchResults = []
+    private func performSearch(query: String) async {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            await MainActor.run {
+                self.searchResults = []
+                self.isLoading = false
+            }
             return
         }
-        
-        searchTask?.cancel()
-        searchTask = Task {
+
+        await MainActor.run { self.isLoading = true }
+
+        do {
+            let results = try await IngredientService.shared.searchIngredients(query: trimmed)
             await MainActor.run {
-                isLoading = true
+                self.searchResults = results
+                self.isLoading = false
             }
-            
-            do {
-                let results = try await IngredientService.shared.searchIngredients(query: query)
-                await MainActor.run {
-                    searchResults = results
-                    isLoading = false
-                }
-            } catch { 
-                print("Search error: \(error)")
-                await MainActor.run {
-                    searchResults = []
-                    isLoading = false
-                }
+        } catch {
+            print("Search error: \(error)")
+            await MainActor.run {
+                self.searchResults = []
+                self.isLoading = false
             }
         }
     }

@@ -11,6 +11,8 @@ struct MainTabView: View {
                     .tag(0)
                 SavedRecipesView()
                     .tag(1)
+                NutritionAnalyticsView(initialRecipe: nil)
+                    .tag(2)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             

@@ -92,6 +92,7 @@ struct RecipeEditView: View {
                     finalRecipe.imageUrl = recipe.imageUrl 
                     finalRecipe.imageName = recipe.imageName
                     finalRecipe.isFromSaved = recipe.isFromSaved
+                    finalRecipe.mealType = finalRecipe.mealType.trimmingCharacters(in: .whitespacesAndNewlines).capitalized
                     
                     onUpdate?(finalRecipe) 
                     isLoading = false

@@ -6,6 +6,7 @@ enum NavigationDestination: Equatable {
     case loading
     case extraDetails(source: ExtraDetailsView.NavigationSource)
     case popularDishes
+    case nutritionAnalytics(Recipe?)
     case recipeDisplay(Recipe)
     case savedRecipes
 }

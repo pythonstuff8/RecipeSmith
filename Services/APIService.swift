@@ -107,7 +107,7 @@ class APIService {
     
     func generateRecipe(prompt: String) async throws -> Recipe {
         print("Starting recipe generation process")
-         var recipe = try await generateRecipeData(prompt: prompt)
+        let recipe = try await generateRecipeData(prompt: prompt)
         print("Successfully generated base recipe data")
         
         if let imageDescription = recipe.imageDescription, !imageDescription.isEmpty {
@@ -153,16 +153,22 @@ class APIService {
         
         let systemPrompt = """
         You are a culinary expert. Return recipe data in strict JSON format.
-        
-        You MUST follow these rules:
-        1. Return ONLY a JSON object with NO additional text
-        2. ALL fields listed below are required and must not be empty
-        3. Time fields MUST include "minutes" (e.g. "15 minutes")
-        4. Calorie count MUST be a number as string (e.g. "450")
-        5. Macros MUST include "g" unit (e.g. "45g")
-        6. Include at least one diet label and equipment item
-        7. DO NOT include step numbers in instructions
-        
+
+        CRITICAL REQUIREMENTS FOR NUTRITION VALUES:
+        1. ALL nutrition values MUST be realistic and based on ingredients
+        2. Macros MUST include units (e.g. "45g", "800mg")
+        3. For high-cholesterol ingredients, use these guidelines:
+           - Eggs: ~200mg per egg
+           - Shrimp: ~150mg per 100g
+           - Red meat: ~80mg per 100g
+           - Cheese: ~30mg per 30g
+           - Butter: ~30mg per tablespoon
+        4. For sodium values, use these guidelines:
+           - Salt: ~500mg per 1/4 tsp
+           - Soy sauce: ~900mg per tablespoon
+           - Cheese: ~250mg per 30g
+           - Processed meats: ~300mg per serving
+
         Required JSON format:
         {
           "cuisine": "string",
@@ -170,15 +176,25 @@ class APIService {
           "description": "string",
           "imgdesc": "string",
           "servings": "string",
+          "serving_size": "string (e.g. \\"100g per serving\\")",
           "prep": "string with minutes",
           "cook": "string with minutes",
           "total": "string with minutes",
           "cal": "number as string",
           "macros": {
             "protein": "string with g",
-            "carbohydrates": "string with g",
-            "fat": "string with g"
+            "carbohydrates": "string with g", 
+            "fat": "string with g",
+            "fiber": "string with g (REQUIRED)",
+            "sugar": "string with g (REQUIRED)",
+            "sodium": "string with mg (REQUIRED - use guidelines above)",
+            "cholesterol": "string with mg (REQUIRED - use guidelines above)",
+            "saturated_fat": "string with g (REQUIRED - always provide)",
+            "trans_fat": "string with g (REQUIRED - always provide)",
+            "vitamins": [{"name": "string", "amount": "number", "unit": "string"}],
+            "minerals": [{"name": "string", "amount": "number", "unit": "string"}]
           },
+          "ingredient_types": { "ingredient string": ["tag1","tag2", "..."] },
           "ingredients": ["string"],
           "instructions": ["string"],
           "meal": "string",
@@ -227,26 +243,99 @@ class APIService {
         
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
-        
+        print("Using data: \(jsonData)")
+
         do {
             let recipe = try decoder.decode(Recipe.self, from: jsonData)
+            print("Successfully decoded base recipe structure")
+
+            func normalizeMacro(_ value: String?, unit: String = "g") -> Bool {
+                guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+                      !value.isEmpty else {
+                    print("Empty or nil macro value")
+                    return false 
+                }
+                
+                if value.lowercased().contains(unit) { return true }
+                
+                let cleaned = value.replacingOccurrences(of: " ", with: "")
+                                 .replacingOccurrences(of: unit, with: "")
+                                 .replacingOccurrences(of: "mg", with: "")
+                                 .replacingOccurrences(of: "g", with: "")
+                if let _ = Double(cleaned) { return true }
+                
+                print("Invalid macro value format: \(value)")
+                return false
+            }
+
+            var validationErrors: [String] = []
             
-            guard 
-                !recipe.prepTime.isEmpty && recipe.prepTime.contains("minute"),
-                !recipe.cookTime.isEmpty && recipe.cookTime.contains("minute"),
-                !recipe.totalTime.isEmpty && recipe.totalTime.contains("minute"),
-                !recipe.calorieCount.isEmpty && Int(recipe.calorieCount) != nil,
-                !recipe.dietLabels.isEmpty,
-                !recipe.equipmentUsed.isEmpty,
-                !recipe.macros.protein.isEmpty && recipe.macros.protein.contains("g"),
-                !recipe.macros.carbohydrates.isEmpty && recipe.macros.carbohydrates.contains("g"),
-                !recipe.macros.fat.isEmpty && recipe.macros.fat.contains("g")
-            else {
-                throw APIError.decodingError
+            if recipe.title.isEmpty { validationErrors.append("Empty title") }
+            if recipe.description.isEmpty { validationErrors.append("Empty description") }
+            if recipe.ingredients.isEmpty { validationErrors.append("Empty ingredients") }
+            if recipe.instructions.isEmpty { validationErrors.append("Empty instructions") }
+            
+            if !recipe.prepTime.contains("minute") && !recipe.prepTime.contains("min") {
+                validationErrors.append("Invalid prep time format: \(recipe.prepTime)")
+            }
+            if !recipe.cookTime.contains("minute") && !recipe.cookTime.contains("min") {
+                validationErrors.append("Invalid cook time format: \(recipe.cookTime)")
+            }
+            if !recipe.totalTime.contains("minute") && !recipe.totalTime.contains("min") {
+                validationErrors.append("Invalid total time format: \(recipe.totalTime)")
             }
             
+            if recipe.calorieCount.isEmpty || Double(recipe.calorieCount.replacingOccurrences(of: " ", with: "")) == nil {
+                validationErrors.append("Invalid calorie count: \(recipe.calorieCount)")
+            }
+            
+            if recipe.dietLabels.isEmpty { validationErrors.append("Empty diet labels") }
+            if recipe.equipmentUsed.isEmpty { validationErrors.append("Empty equipment") }
+            
+            if !normalizeMacro(recipe.macros.protein) {
+                validationErrors.append("Invalid protein format: \(recipe.macros.protein)")
+            }
+            if !normalizeMacro(recipe.macros.carbohydrates) {
+                validationErrors.append("Invalid carbs format: \(recipe.macros.carbohydrates)")
+            }
+            if !normalizeMacro(recipe.macros.fat) {
+                validationErrors.append("Invalid fat format: \(recipe.macros.fat)")
+            }
+            if !normalizeMacro(recipe.macros.sodium, unit: "mg") {
+                validationErrors.append("Invalid sodium format: \(String(describing: recipe.macros.sodium))")
+            }
+            if !normalizeMacro(recipe.macros.cholesterol, unit: "mg") {
+                validationErrors.append("Invalid cholesterol format: \(String(describing: recipe.macros.cholesterol))")
+            }
+
+            if !validationErrors.isEmpty {
+                print("Validation failed with errors:")
+                validationErrors.forEach { print("- \($0)") }
+                throw APIError.decodingError
+            }
+
+            if let servingSize = recipe.servingSize {
+                if servingSize.isEmpty {
+                    print("Warning: Empty serving_size provided")
+                } else {
+                    print("Serving size validated: \(servingSize)")
+                }
+            }
+            
+            if let types = recipe.ingredientTypes {
+                if types.isEmpty {
+                    print("Warning: Empty ingredient_types provided")
+                } else {
+                    print("Ingredient types validated: \(types.count) ingredients mapped")
+                }
+            }
+
+            print("Recipe validation successful")
             return recipe
+            
         } catch {
+            print("Recipe validation/decoding failed: \(error)")
+            print("Raw JSON content: \(String(data: jsonData, encoding: .utf8) ?? "invalid JSON")")
             throw APIError.decodingError
         }
     }

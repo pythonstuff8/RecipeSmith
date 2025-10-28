@@ -28,6 +28,17 @@ struct BottomTabBar: View {
                     navigationManager.navigate(to: .savedRecipes)
                 }
             }
+            
+            TabBarButton(
+                title: "Analytics",
+                icon: "chart.bar.fill",
+                isSelected: selectedTab == 2
+            ) {
+                withAnimation {
+                    selectedTab = 2
+                    navigationManager.navigate(to: .nutritionAnalytics(nil))
+                }
+            }
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
