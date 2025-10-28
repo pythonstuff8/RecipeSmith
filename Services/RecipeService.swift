@@ -42,8 +42,9 @@ class RecipeService {
         4. Include vitamins and minerals arrays with realistic estimates.
         5. Provide ingredient list with amounts and clear instructions.
         6. Also RETURN AN ADDITIONAL FIELD named "serving_size" describing the typical weight/volume per serving (e.g. "100g per serving").
-        7. Also RETURN an "ingredient_types" object that maps each ingredient (string) to a list of nutritional tags/categories (e.g. "protein", "fiber", "vitamin_c", "cholesterol", "sodium"). Use concise labels.
-
+        8. Also RETURN an "ingredient_types" object that maps each ingredient (string) to a list of nutritional tags/categories. USE ONLY these tags exactly (lowercase):
+           ["protein","meat","dairy","marinade","fat","oil","vegetable","aromatic","spice","seasoning","acid","fresh","grain","bread","herb","seed paste","sauce","liquid","optional","sodium","salt","cholesterol","vitamin","vitamin c","vitamin a","vitamin d"].
+           Prefer the most relevant 1-3 tags per ingredient.
         Return ONLY valid JSON (no surrounding markdown) with keys matching the required output, e.g. "ingredient_types": { "shrimp": ["protein","cholesterol"], ... }
         """
         
@@ -127,8 +128,8 @@ class RecipeService {
             "sugar": "exact grams per serving (ALWAYS provide this)",
             "sodium": "exact mg per serving (ALWAYS provide this)",
             "cholesterol": "exact mg per serving (ALWAYS provide this)",
-            "saturated_fat": "exact grams per serving (ALWAYS provide this)",
-            "trans_fat": "exact grams per serving (ALWAYS provide this)",
+            "saturatedfat": "exact grams per serving (ALWAYS provide this)",
+            "transfat": "exact grams per serving (ALWAYS provide this)",
             "vitamins": [{"name": "Vitamin Name", "amount": "number", "unit": "unit"}],
             "minerals": [{"name": "Mineral Name", "amount": "number", "unit": "unit"}]
           },

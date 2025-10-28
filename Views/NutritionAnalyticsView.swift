@@ -10,7 +10,7 @@ struct NutritionAnalyticsView: View {
     @State private var nutritionData: NutritionData?
     @State private var healthInsights: [HealthInsight] = []
     @State private var nutritionTrends: [NutritionTrend] = []
-    @State private var dietaryRecommendations: [String] = []
+    
     @State private var isUpdating: Bool = false
     @State private var showCheckmark: Bool = false
     @State private var updatingRecipe: Recipe? = nil
@@ -30,9 +30,7 @@ struct NutritionAnalyticsView: View {
         }
     }
     
-    private var filteredDietaryRecommendations: [String] {
-        dietaryRecommendations.filter { !appliedRecommendations.contains($0) }
-    }
+    
     
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -42,7 +40,7 @@ struct NutritionAnalyticsView: View {
                         recipe: selectedRecipe!,
                         nutritionData: nutritionData,
                         healthInsights: filteredHealthInsights,
-                        dietaryRecommendations: filteredDietaryRecommendations,
+                        
                         nutritionTrends: nutritionTrends,
                         isUpdating: isUpdating,
                         showCheckmark: showCheckmark,
@@ -51,7 +49,7 @@ struct NutritionAnalyticsView: View {
                                 selectedRecipe = nil
                                 nutritionData = nil
                                 healthInsights = []
-                                dietaryRecommendations = []
+                                
                                 nutritionTrends = []
                                 appliedRecommendations = []
                             }
@@ -124,7 +122,7 @@ struct NutritionAnalyticsView: View {
         nutritionData = nutritionService.calculateNutritionData(from: recipe)
         healthInsights = nutritionService.generateHealthInsights(for: nutritionData!)
         nutritionTrends = nutritionService.analyzeNutritionTrends(from: savedVM.savedRecipes)
-        dietaryRecommendations = nutritionService.getDietaryRecommendations(for: nutritionData!)
+        
     }
     
     private func applyRecommendationToRecipe(_ recommendation: String) {
@@ -525,7 +523,7 @@ private struct MacroBreakdownView: View {
                     .frame(height: 200)
                     .frame(maxWidth: 300, alignment: .trailing)
                     .frame(maxWidth: .infinity, alignment: .trailing)
-                    .padding(.leading, 50)
+                    .padding(.leading, 55)
                 
                 VStack(alignment: .leading, spacing: 12) {
                     MacroDetailRow(
@@ -635,7 +633,7 @@ private struct MacroDetailRow: View {
             
             VStack(alignment: .trailing, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text("\(Int(value))")
+                    Text(formatValue(value))
                         .font(.headline)
                         .fontWeight(.semibold)
                     Text(unit)
@@ -644,6 +642,12 @@ private struct MacroDetailRow: View {
                 }
             }
         }
+    }
+    private func formatValue(_ v: Double) -> String {
+        if v == 0 { return "0" }
+        if v < 1 { return String(format: "%.1f", v) }
+        if v < 10 && v != floor(v) { return String(format: "%.1f", v) }
+        return String(Int(v))
     }
 }
 
@@ -800,6 +804,20 @@ private struct MicronutrientsView: View {
                     unit: "mg",
                     dailyValue: 300.0
                 )
+
+                MicronutrientCard(
+                    name: "Saturated Fat",
+                    value: nutrition.saturatedFat,
+                    unit: "g",
+                    dailyValue: 20.0
+                )
+
+                MicronutrientCard(
+                    name: "Trans Fat",
+                    value: nutrition.transFat,
+                    unit: "g",
+                    dailyValue: 2.0
+                )
             }
             
             if !nutrition.vitamins.isEmpty || !nutrition.minerals.isEmpty {
@@ -861,7 +879,7 @@ private struct MicronutrientCard: View {
                 .tracking(0.5)
             
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("\(Int(value))")
+                Text(formatValue(value))
                     .font(.headline)
                     .fontWeight(.bold)
                 Text(unit)
@@ -902,6 +920,13 @@ private struct MicronutrientCard: View {
             return .green
         }
     }
+
+    private func formatValue(_ v: Double) -> String {
+        if v == 0 { return "0" }
+        if v < 1 { return String(format: "%.1f", v) }
+        if v < 10 && v != floor(v) { return String(format: "%.1f", v) }
+        return String(Int(v))
+    }
 }
 
 private struct VitaminMineralRow: View {
@@ -919,7 +944,7 @@ private struct VitaminMineralRow: View {
                 Spacer()
             
             HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("\(Int(amount))")
+                Text(formatValue(amount))
                     .font(.caption)
                     .fontWeight(.semibold)
                 Text(unit)
@@ -927,66 +952,24 @@ private struct VitaminMineralRow: View {
                     .foregroundColor(.secondary)
             }
             
-            Text("(\(Int((amount / dailyValue) * 100))%)")
-                .font(.caption2)
-                .foregroundColor(.secondary)
-                .frame(width: 40, alignment: .trailing)
+            if dailyValue > 0 {
+                Text("(\(Int((amount / dailyValue) * 100))%)")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                    .frame(width: 40, alignment: .trailing)
+            }
         }
         .padding(.vertical, 2)
     }
-}
-
-private struct DietaryRecommendationsView: View {
-    let recommendations: [String]
-    let onApplyRecommendation: (String) -> Void
     
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Dietary Recommendations")
-                .font(.headline)
-                .fontWeight(.semibold)
-            
-            LazyVStack(spacing: 8) {
-                ForEach(Array(recommendations.enumerated()), id: \.offset) { index, recommendation in
-                    Button(action: {
-                        onApplyRecommendation(recommendation)
-                    }) {
-                        HStack(alignment: .top, spacing: 12) {
-                            Image(systemName: "lightbulb.fill")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                                .frame(width: 16, height: 16)
-                            
-                            Text(recommendation)
-                                .font(.caption)
-                                .foregroundColor(.primary)
-                                .lineLimit(nil)
-                                .multilineTextAlignment(.leading)
-                            
-                            Spacer()
-                            
-                            Image(systemName: "arrow.right.circle.fill")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                        }
-                        .padding(12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.blue.opacity(0.1))
-                        )
-                    }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
-        }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-        )
+    private func formatValue(_ v: Double) -> String {
+        if v == 0 { return "0" }
+        if v < 1 { return String(format: "%.1f", v) }
+        if v < 10 && v != floor(v) { return String(format: "%.1f", v) }
+        return String(Int(v))
     }
 }
+
 
 private struct NutritionTrendsView: View {
     let trends: [NutritionTrend]
@@ -1092,7 +1075,7 @@ private struct IngredientAnalysisView: View {
             
             LazyVStack(spacing: 8) {
                 ForEach(recipe.ingredients, id: \.self) { ingredient in
-                    IngredientRow(ingredient: ingredient)
+                    IngredientRow(ingredient: ingredient, types: recipe.ingredientTypes)
                 }
             }
         }
@@ -1107,6 +1090,8 @@ private struct IngredientAnalysisView: View {
 
 private struct IngredientRow: View {
     let ingredient: String
+    let types: [String: [String]]?
+    @State private var gptTags: [String] = []
     
     var body: some View {
         HStack(spacing: 12) {
@@ -1116,32 +1101,110 @@ private struct IngredientRow: View {
             
             Spacer()
             
-            HStack(spacing: 8) {
-                let lower = ingredient.lowercased()
-                if lower.contains("protein") || lower.contains("meat") || lower.contains("chicken") || lower.contains("fish") || lower.contains("beef") || lower.contains("pork") || lower.contains("lamb") || lower.contains("tofu") || lower.contains("beans") || lower.contains("lentil") || lower.contains("shrimp") || lower.contains("seafood") || lower.contains("salmon") {
-                    NutritionalIndicator(icon: "p.circle.fill", color: .green, label: "Protein")
+            let tags = Array(Set(gptTags.map { $0.lowercased() })).sorted()
+            let scale: CGFloat = tags.count == 0 ? 1.0 : max(0.65, 1.0 - CGFloat(tags.count - 1) * 0.1)
+            let spacing: CGFloat = tags.count == 0 ? 6 : max(2, 8 - CGFloat(tags.count))
+            HStack(spacing: spacing) {
+                ForEach(tags, id: \.self) { tag in
+                    let style = tagStyle(for: tag)
+                    TagChip(icon: style.icon, label: style.label, color: style.color, showBackground: style.showBackground)
+                        .scaleEffect(scale)
                 }
-                
-                if lower.contains("vegetable") || lower.contains("fiber") || lower.contains("whole grain") || lower.contains("brown rice") || lower.contains("quinoa") || lower.contains("oats") || lower.contains("beans") {
-                    NutritionalIndicator(icon: "leaf.fill", color: .green, label: "Fiber")
-                }
-                
-                if lower.contains("vitamin") || lower.contains("citrus") || lower.contains("tomato") || lower.contains("bell pepper") || lower.contains("broccoli") || lower.contains("spinach") {
-                    NutritionalIndicator(icon: "star.fill", color: .orange, label: "Vitamins")
-                }
-                
-                if lower.contains("egg") || lower.contains("shrimp") || lower.contains("shellfish") || lower.contains("butter") || lower.contains("cheese") || lower.contains("bacon") || lower.contains("lamb") {
-                    NutritionalIndicator(icon: "heart.fill", color: .purple, label: "Cholesterol")
-                }
-             }
+            }
         }
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color(.systemGray6))
         )
+        .onAppear { deriveTags() }
+    }
+
+    private func deriveTags() {
+        guard let types = types else { gptTags = []; return }
+        let lower = ingredient.lowercased()
+        if let entry = types.first(where: { key, _ in lower.contains(key.lowercased()) }) {
+            gptTags = entry.value
+        } else {
+            gptTags = []
+        }
+    }
+
+    private func tagStyle(for rawTag: String) -> (icon: String, label: String, color: Color, showBackground: Bool) {
+        let tag = rawTag.lowercased()
+        switch tag {
+        case "spice":
+            return ("flame.fill", "Spice", .orange, false)
+        case "herb":
+            return ("leaf.fill", "Herb", .green, true)
+        case "seasoning":
+            return ("wand.and.stars", "Seasoning", .yellow, true)
+        case "protein":
+            return ("p.circle.fill", "Protein", .green, true)
+        case "meat":
+            return ("fork.knife", "Meat", .red, true)
+        case "dairy":
+            return ("takeoutbag.and.cup.and.straw.fill", "Dairy", .blue, true)
+        case "marinade":
+            return ("drop.fill", "Marinade", .teal, true)
+        case "fat", "oil":
+            return ("circle.hexagongrid.fill", "Fat", .purple, true)
+        case "vegetable", "aromatic":
+            return ("leaf", "Vegetable", .green, true)
+        case "acid":
+            return ("drop.triangle.fill", "Acid", .pink, true)
+        case "fresh":
+            return ("sparkles", "Fresh", .mint, true)
+        case "grain", "bread":
+            return ("bag.fill", "Grain", .brown, true)
+        case "seed paste", "sauce":
+            return ("square.and.line.vertical.and.square.fill", "Sauce", .orange, true)
+        case "liquid":
+            return ("drop.fill", "Liquid", .blue, true)
+        case "optional":
+            return ("questionmark.circle.fill", "Optional", .gray, true)
+        case "cholesterol":
+            return ("heart.fill", "Cholesterol", .purple, true)
+        case "sodium", "salt":
+            return ("bolt.trianglebadge.exclamationmark", "Sodium", .red, true)
+        case "vitamin", "vitamin c", "vitamin a", "vitamin d":
+            return ("star.fill", "Vitamin", .orange, true)
+        default:
+            return ("tag.fill", rawTag.capitalized, .gray, true)
+        }
     }
 }
+
+private struct TagChip: View {
+    let icon: String
+    let label: String
+    let color: Color
+    let showBackground: Bool
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundColor(color)
+            Text(label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .padding(.horizontal, showBackground ? 8 : 0)
+        .padding(.vertical, showBackground ? 4 : 0)
+        .background(
+            Group {
+                if showBackground {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(color.opacity(0.12))
+                } else {
+                    Color.clear
+                }
+            }
+        )
+    }
+}
+
 
 private struct NutritionalIndicator: View {
     let icon: String
@@ -1212,7 +1275,6 @@ private struct DetailedNutritionView: View {
     let recipe: Recipe
     let nutritionData: NutritionData?
     let healthInsights: [HealthInsight]
-    let dietaryRecommendations: [String]
     let nutritionTrends: [NutritionTrend]
     let isUpdating: Bool
     let showCheckmark: Bool
@@ -1288,29 +1350,6 @@ private struct DetailedNutritionView: View {
                                 }
                             }
                             
-                            if !dietaryRecommendations.isEmpty {
-                                Divider()
-                                    .padding(.vertical, 8)
-                                
-                                ForEach(dietaryRecommendations, id: \.self) { recommendation in
-                                    Button(action: { onApplyRecommendation(recommendation) }) {
-                                        HStack(alignment: .top, spacing: 12) {
-                                            Image(systemName: "lightbulb.fill")
-                                                .foregroundColor(.blue)
-                                            Text(recommendation)
-                                                .font(.subheadline)
-                                                .foregroundColor(.primary)
-                                                .multilineTextAlignment(.leading)
-                                            Spacer()
-                                            Image(systemName: "arrow.right.circle.fill")
-                                                .foregroundColor(.blue)
-                                        }
-                                        .padding(12)
-                                        .background(Color.blue.opacity(0.1))
-                                        .cornerRadius(8)
-                                    }
-                                }
-                            }
                         }
                         .padding(20)
                         .background(RoundedRectangle(cornerRadius: 16)

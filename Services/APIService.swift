@@ -189,8 +189,8 @@ class APIService {
             "sugar": "string with g (REQUIRED)",
             "sodium": "string with mg (REQUIRED - use guidelines above)",
             "cholesterol": "string with mg (REQUIRED - use guidelines above)",
-            "saturated_fat": "string with g (REQUIRED - always provide)",
-            "trans_fat": "string with g (REQUIRED - always provide)",
+            "saturatedfat": "string with g (REQUIRED - always provide)",
+            "transfat": "string with g (REQUIRED - always provide)",
             "vitamins": [{"name": "string", "amount": "number", "unit": "string"}],
             "minerals": [{"name": "string", "amount": "number", "unit": "string"}]
           },
@@ -201,6 +201,10 @@ class APIService {
           "equipment": ["string"],
           "diet": ["string"]
         }
+        IMPORTANT:
+        - The vitamins array should include likely items present given the ingredients (e.g., Vitamin A, C, D, E, K, B1, B2, B3, B6, Folate, B12) using appropriate units (Vitamin A as IU or mcg RAE; Vitamin D as IU or mcg; others typically mg or mcg) with realistic amounts.
+        - The minerals array should include common minerals when present (e.g., Calcium, Iron, Potassium, Magnesium, Zinc) with realistic amounts and correct units (mg or mcg).
+        - ingredientTypes tags must come ONLY from this lowercase set for styling consistency: ["protein","meat","dairy","marinade","fat","oil","vegetable","aromatic","spice","seasoning","acid","fresh","grain","bread","herb","seed paste","sauce","liquid","optional","sodium","salt","cholesterol","vitamin","vitamin c","vitamin a","vitamin d"]. Choose the 0-2 tags per ingredient.
         """
         
         let payload: [String: Any] = [

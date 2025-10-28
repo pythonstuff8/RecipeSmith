@@ -79,22 +79,24 @@ class NutritionService {
         
         let fiber = parseMacroValue(recipe.macros.fiber ?? "0g")
         let sugar = parseMacroValue(recipe.macros.sugar ?? "0g")
+        let sodiumProvided = !(recipe.macros.sodium?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
+        let cholesterolProvided = !(recipe.macros.cholesterol?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true)
         var sodium = parseMacroValue(recipe.macros.sodium ?? "0mg")
         var cholesterol = parseMacroValue(recipe.macros.cholesterol ?? "0mg")
         let saturatedFat = parseMacroValue(recipe.macros.saturatedFat ?? "0g")
         let transFat = parseMacroValue(recipe.macros.transFat ?? "0g")
         
-        if sodium <= 0 || cholesterol <= 0 {
+        if !sodiumProvided || !cholesterolProvided {
             if let typesMap = recipe.ingredientTypes, !typesMap.isEmpty {
                 for (ing, tags) in typesMap {
                     let lower = ing.lowercased()
-                    if sodium <= 0 {
+                    if !sodiumProvided {
                         if tags.contains(where: { $0.contains("sodium") || $0.contains("salt") } )
                             || lower.contains("soy sauce") || lower.contains("salt") || lower.contains("broth") || lower.contains("bouillon") || lower.contains("bacon") || lower.contains("cheese") {
                             sodium += 400.0
                         }
                     }
-                    if cholesterol <= 0 {
+                    if !cholesterolProvided {
                         if tags.contains(where: { $0.contains("cholesterol") || $0.contains("high_cholesterol") })
                             || lower.contains("egg") || lower.contains("shrimp") || lower.contains("shellfish") || lower.contains("butter") || lower.contains("cheese") || lower.contains("lamb") || lower.contains("bacon") {
                             cholesterol += 120.0
@@ -102,17 +104,17 @@ class NutritionService {
                     }
                 }
             }
-            if sodium <= 0 || cholesterol <= 0 {
+            if !sodiumProvided || !cholesterolProvided {
                 for ing in recipe.ingredients {
                     let lower = ing.lowercased()
-                    if sodium <= 0 {
+                    if !sodiumProvided {
                         if lower.contains("soy sauce") { sodium += 900 }
                         else if lower.contains("broth") || lower.contains("bouillon") { sodium += 700 }
                         else if lower.contains("cheese") { sodium += 250 }
                         else if lower.contains("bacon") || lower.contains("salami") { sodium += 300 }
                         else if lower.contains("salt") { sodium += 500 }
                     }
-                    if cholesterol <= 0 {
+                    if !cholesterolProvided {
                         if lower.contains("egg") { cholesterol += 186 } 
                         else if lower.contains("shrimp") { cholesterol += 150 } 
                         else if lower.contains("butter") { cholesterol += 30 }
@@ -126,11 +128,15 @@ class NutritionService {
         }
         
         let vitamins = (recipe.macros.vitamins ?? []).map { v in
-            VitaminData(name: v.name, amount: Double(v.amount) ?? 0, unit: v.unit, dailyValue: getDailyValue(for: v.name))
+            let amount = Double(v.amount) ?? 0
+            let dv = getDailyValue(for: v.name, unit: v.unit)
+            return VitaminData(name: v.name, amount: amount, unit: v.unit, dailyValue: dv)
         }
         
         let minerals = (recipe.macros.minerals ?? []).map { m in
-            MineralData(name: m.name, amount: Double(m.amount) ?? 0, unit: m.unit, dailyValue: getDailyValue(for: m.name))
+            let amount = Double(m.amount) ?? 0
+            let dv = getDailyValue(for: m.name, unit: m.unit)
+            return MineralData(name: m.name, amount: amount, unit: m.unit, dailyValue: dv)
         }
         
         return NutritionData(
@@ -268,40 +274,62 @@ class NutritionService {
     }
     
     private func parseMacroValue(_ value: String) -> Double {
-        let cleaned = value.replacingOccurrences(of: "g", with: "")
+        let lower = value.lowercased()
+        let cleaned = lower
             .replacingOccurrences(of: "mg", with: "")
+            .replacingOccurrences(of: "g", with: "")
+            .replacingOccurrences(of: ",", with: "")
             .replacingOccurrences(of: " ", with: "")
         return Double(cleaned) ?? 0
     }
     
-    private func getDailyValue(for nutrientName: String) -> Double {
+    private func getDailyValue(for nutrientName: String, unit: String) -> Double {
         let name = nutrientName.lowercased()
+        let unitLower = unit.lowercased()
         if name.contains("vitamin c") || name.contains("vit c") {
-            return 90.0
+            return unitLower == "mg" ? 90.0 : 90.0
         } else if name.contains("vitamin a") || name.contains("vit a") {
+            if unitLower == "iu" { return 3000.0 }
+            if unitLower == "mcg" || unitLower == "µg" || unitLower == "ug" { return 900.0 }
+            if unitLower == "mg" { return 0.9 }
             return 900.0
-        } else if name.contains("iron") {
-            return 18.0
-        } else if name.contains("calcium") {
-            return 1000.0
         } else if name.contains("vitamin d") || name.contains("vit d") {
+            if unitLower == "iu" { return 800.0 }
+            if unitLower == "mcg" || unitLower == "µg" || unitLower == "ug" { return 20.0 }
             return 20.0
         } else if name.contains("vitamin e") || name.contains("vit e") {
-            return 15.0
+            return unitLower == "mg" ? 15.0 : 15.0
         } else if name.contains("vitamin k") || name.contains("vit k") {
+            if unitLower == "mcg" || unitLower == "µg" || unitLower == "ug" { return 120.0 }
+            if unitLower == "mg" { return 0.12 }
             return 120.0
         } else if name.contains("thiamin") || name.contains("vitamin b1") {
-            return 1.2
+            return unitLower == "mg" ? 1.2 : 1.2
         } else if name.contains("riboflavin") || name.contains("vitamin b2") {
-            return 1.3
+            return unitLower == "mg" ? 1.3 : 1.3
         } else if name.contains("niacin") || name.contains("vitamin b3") {
-            return 16.0
+            return unitLower == "mg" ? 16.0 : 16.0
         } else if name.contains("vitamin b6") {
-            return 1.7
+            return unitLower == "mg" ? 1.7 : 1.7
         } else if name.contains("folate") || name.contains("folic acid") {
+            if unitLower == "mcg" || unitLower == "µg" || unitLower == "ug" { return 400.0 }
+            if unitLower == "mg" { return 0.4 }
             return 400.0
         } else if name.contains("vitamin b12") {
+            if unitLower == "mcg" || unitLower == "µg" || unitLower == "ug" { return 2.4 }
+            if unitLower == "mg" { return 0.0024 }
             return 2.4
+        }
+        if name.contains("iron") {
+            return unitLower == "mg" ? 18.0 : 18.0
+        } else if name.contains("calcium") {
+            return unitLower == "mg" ? 1000.0 : 1000.0
+        } else if name.contains("potassium") {
+            return unitLower == "mg" ? 4700.0 : 4700.0
+        } else if name.contains("magnesium") {
+            return unitLower == "mg" ? 420.0 : 420.0
+        } else if name.contains("zinc") {
+            return unitLower == "mg" ? 11.0 : 11.0
         }
         return 0
     }

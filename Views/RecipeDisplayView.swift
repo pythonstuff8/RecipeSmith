@@ -118,8 +118,8 @@ struct RecipeMacros: Hashable, Codable {
         case sugar
         case sodium
         case cholesterol
-        case saturatedFat = "saturated_fat"
-        case transFat = "trans_fat"
+        case saturatedFat = "saturatedfat"
+        case transFat = "transfat"
         case vitamins
         case minerals
     }
