@@ -226,7 +226,6 @@ class NutritionService {
     func analyzeNutritionTrends(from recipes: [Recipe]) -> [NutritionTrend] {
         guard !recipes.isEmpty else { return [] }
         
-        // Use same parsing logic as calculateNutritionData
         let recipesData = recipes.map { calculateNutritionData(from: $0) }
         
         let avgCalories = recipesData.reduce(0) { $0 + $1.calories } / Double(recipes.count)
